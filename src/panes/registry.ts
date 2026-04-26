@@ -1,0 +1,45 @@
+import fs from 'fs';
+import path from 'path';
+import { homedir } from 'os';
+import { ClaudePane } from './ClaudePane.ts';
+import { JiraPane } from './JiraPane.ts';
+import type { Pane } from './Pane.ts';
+
+export const PANE_IDS = ['claude', 'jira'] as const;
+export type PaneId = typeof PANE_IDS[number];
+
+export function isPaneId(s: string): s is PaneId {
+  return (PANE_IDS as readonly string[]).includes(s);
+}
+
+export function getPane(id: string): Pane {
+  switch (id) {
+    case 'jira': return new JiraPane();
+    case 'claude':
+    default: return new ClaudePane();
+  }
+}
+
+export function activePanePath(): string {
+  return path.join(homedir(), '.panes', 'active.json');
+}
+
+export function readActivePaneId(): PaneId {
+  const p = activePanePath();
+  if (!fs.existsSync(p)) return 'claude';
+  try {
+    const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
+    if (typeof parsed?.id === 'string' && isPaneId(parsed.id)) return parsed.id;
+  } catch {
+    // fall through
+  }
+  return 'claude';
+}
+
+export function writeActivePaneId(id: PaneId): void {
+  const p = activePanePath();
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  const tmp = `${p}.tmp.${process.pid}`;
+  fs.writeFileSync(tmp, JSON.stringify({ id }) + '\n');
+  fs.renameSync(tmp, p);
+}

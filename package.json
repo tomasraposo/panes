@@ -1,0 +1,30 @@
+{
+  "name": "panes",
+  "version": "0.1.0",
+  "description": "Personal SRE wallboard — ASCII panes on the macOS Desktop via Übersicht",
+  "type": "module",
+  "bin": {
+    "panes": "cli.mjs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix"
+  },
+  "dependencies": {
+    "@types/escape-html": "^1.0.4",
+    "escape-html": "^1.0.3",
+    "marked": "^18.0.2",
+    "tsx": "^4.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-istanbul": "^1.6.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^1.6.0"
+  }
+}
