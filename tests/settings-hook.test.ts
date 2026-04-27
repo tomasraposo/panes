@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import {
   installSessionStartHookAt,
   uninstallSessionStartHookAt,
 } from '../src/settings-hook.ts';
+import { createTmpDir, cleanupTmpDir } from './fixtures.ts';
 
 const CLI_PATH = '/Users/tomasraposo/panes/cli.mjs';
 const HOOK_CMD = `${CLI_PATH} refresh`;
@@ -14,12 +14,12 @@ let tmpRoot: string;
 let settingsPath: string;
 
 beforeEach(() => {
-  tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'panes-settings-test-'));
+  tmpRoot = createTmpDir('panes-settings-test');
   settingsPath = path.join(tmpRoot, '.claude', 'settings.json');
 });
 
 afterEach(() => {
-  fs.rmSync(tmpRoot, { recursive: true, force: true });
+  cleanupTmpDir(tmpRoot);
 });
 
 function readSettings(): Record<string, unknown> {

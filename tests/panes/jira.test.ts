@@ -1,35 +1,28 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import { JiraPane } from '../../src/panes/JiraPane.ts';
+import { createTmpDir, cleanupTmpDir, setEnv, type EnvSnapshot } from '../fixtures.ts';
 
 let tmpRoot: string;
 let dataDir: string;
-const prevEnv: Record<string, string | undefined> = {};
+let envSnapshot: EnvSnapshot;
 
 beforeEach(() => {
-  tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'panes-jira-test-'));
+  tmpRoot = createTmpDir('panes-jira-test');
   dataDir = path.join(tmpRoot, 'data');
   fs.mkdirSync(dataDir, { recursive: true });
-
-  prevEnv.PANES_DATA_DIR = process.env.PANES_DATA_DIR;
-  prevEnv.JIRA_EMAIL = process.env.JIRA_EMAIL;
-  prevEnv.JIRA_TOKEN = process.env.JIRA_TOKEN;
-  prevEnv.JIRA_BASE_URL = process.env.JIRA_BASE_URL;
-
-  process.env.PANES_DATA_DIR = dataDir;
-  process.env.JIRA_EMAIL = 'me@example.com';
-  process.env.JIRA_TOKEN = 'test-token';
-  process.env.JIRA_BASE_URL = 'https://example.atlassian.net';
+  envSnapshot = setEnv({
+    PANES_DATA_DIR: dataDir,
+    JIRA_EMAIL: 'me@example.com',
+    JIRA_TOKEN: 'test-token',
+    JIRA_BASE_URL: 'https://example.atlassian.net',
+  });
 });
 
 afterEach(() => {
-  fs.rmSync(tmpRoot, { recursive: true, force: true });
-  for (const [k, v] of Object.entries(prevEnv)) {
-    if (v === undefined) delete process.env[k];
-    else process.env[k] = v;
-  }
+  cleanupTmpDir(tmpRoot);
+  envSnapshot.restore();
 });
 
 function mockFetch(payload: unknown, status = 200) {
