@@ -148,6 +148,13 @@ safeLoadJson: (key) ->
   catch
     return null
 
+parseStat: (raw) ->
+  parts = (raw or '0 -1').trim().split(/\s+/)
+  size = parseInt(parts[1], 10)
+  size = -1 unless Number.isFinite(size)
+  mtime: parseInt(parts[0], 10) or 0
+  size: size
+
 loadSectionOrder: ->
   parsed = @safeLoadJson('panes-section-order')
   if Array.isArray(parsed) then parsed else []
@@ -500,10 +507,7 @@ attachRefresh: (domEl) ->
       logCmd = "tail -n 1 \"$HOME/.panes/cache/refresh-#{meta.id}.log\" 2>/dev/null"
 
       self.run statCmd, (err, mt) ->
-        parts = (mt or '0 -1').trim().split(/\s+/)
-        initialMtime = parseInt(parts[0], 10) or 0
-        initialSize = parseInt(parts[1], 10)
-        initialSize = -1 unless Number.isFinite(initialSize)
+        { mtime: initialMtime, size: initialSize } = self.parseStat(mt)
 
         self.run "/Users/tomasraposo/panes/cli.mjs refresh --force", (err2, _o) ->
           pollInterval = setInterval((->
@@ -516,10 +520,7 @@ attachRefresh: (domEl) ->
               return
             self.run statCmd, (e2, m) ->
               return if done
-              p = (m or '0 -1').trim().split(/\s+/)
-              newMtime = parseInt(p[0], 10) or 0
-              newSize = parseInt(p[1], 10)
-              newSize = -1 unless Number.isFinite(newSize)
+              { mtime: newMtime, size: newSize } = self.parseStat(m)
               if newMtime > initialMtime or (newSize >= 0 and newSize != initialSize)
                 finish()
               return
