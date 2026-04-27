@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { renderHtml } from './html-render.ts';
 import type { Pane } from './panes/Pane.ts';
 import { getPane, isPaneId, PANE_IDS, readActivePaneId, writeActivePaneId, type PaneId } from './panes/registry.ts';
-import { getCacheDir, getDataDir } from './paths.ts';
+import { getCacheDir, getDataDir, getFilterPath } from './paths.ts';
 import {
   installSessionStartHookAt,
   uninstallSessionStartHookAt,
@@ -227,7 +227,7 @@ async function runActive(args: string[]): Promise<CliResult> {
 }
 
 async function runFilter(args: string[]): Promise<CliResult> {
-  const filterPath = path.join(homedir(), '.panes', 'filter.json');
+  const filterPath = getFilterPath();
   const arg = args[0];
 
   if (!arg) {
