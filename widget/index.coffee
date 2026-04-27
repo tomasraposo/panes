@@ -155,6 +155,24 @@ parseStat: (raw) ->
   mtime: parseInt(parts[0], 10) or 0
   size: size
 
+colorInput: (value, onInput) ->
+  input = document.createElement('input')
+  input.type = 'color'
+  input.value = value
+  input.addEventListener('input', onInput)
+  input
+
+selectInput: (options, currentValue, onChange) ->
+  select = document.createElement('select')
+  for [val, label] in options
+    opt = document.createElement('option')
+    opt.value = val
+    opt.textContent = label
+    opt.selected = true if val == currentValue
+    select.appendChild(opt)
+  select.addEventListener('change', onChange)
+  select
+
 loadSectionOrder: ->
   parsed = @safeLoadJson('panes-section-order')
   if Array.isArray(parsed) then parsed else []
@@ -325,49 +343,26 @@ buildSettingsPanel: (domEl) ->
 
   for [key, label] in [['title', 'Title'], ['heading', 'Headings'], ['subheading', 'Subheadings'], ['bold', 'Bold'], ['code', 'Code'], ['link', 'Links']]
     do (key, label) ->
-      input = document.createElement('input')
-      input.type = 'color'
-      input.value = settings.accentColors[key]
-      input.addEventListener 'input', (e) ->
+      onChange = (e) ->
         s = self.loadSettings()
         s.accentColors[key] = e.target.value
         self.saveSettings(s)
         self.applySettings(domEl)
         return
-      addRow(label, input)
+      addRow(label, self.colorInput(settings.accentColors[key], onChange))
       return
 
-  intervalSelect = document.createElement('select')
-  for [val, optLabel] in [[60, '60s'], [120, '2 min'], [300, '5 min'], [600, '10 min']]
-    opt = document.createElement('option')
-    opt.value = val
-    opt.textContent = optLabel
-    if settings.refreshInterval == val
-      opt.selected = true
-    intervalSelect.appendChild(opt)
-  intervalSelect.addEventListener 'change', (e) ->
+  intervalOptions = [[60, '60s'], [120, '2 min'], [300, '5 min'], [600, '10 min']]
+  intervalChange = (e) ->
     s = self.loadSettings()
     s.refreshInterval = parseInt(e.target.value, 10) or 60
     self.saveSettings(s)
     return
-  addRow('Refresh interval', intervalSelect)
+  addRow('Refresh interval', self.selectInput(intervalOptions, settings.refreshInterval, intervalChange))
 
-  recencySelect = document.createElement('select')
-  recencyOptions = [
-    ['all', 'All time']
-    [7, '7 days']
-    [14, '14 days']
-    [30, '30 days']
-    [90, '90 days']
-  ]
-  for [val, optLabel] in recencyOptions
-    opt = document.createElement('option')
-    opt.value = val
-    opt.textContent = optLabel
-    if (settings.recencyDays == null and val == 'all') or settings.recencyDays == val
-      opt.selected = true
-    recencySelect.appendChild(opt)
-  recencySelect.addEventListener 'change', (e) ->
+  recencyOptions = [['all', 'All time'], [7, '7 days'], [14, '14 days'], [30, '30 days'], [90, '90 days']]
+  recencyCurrent = if settings.recencyDays == null then 'all' else settings.recencyDays
+  recencyChange = (e) ->
     s = self.loadSettings()
     v = e.target.value
     s.recencyDays = if v == 'all' then null else parseInt(v, 10)
@@ -379,7 +374,7 @@ buildSettingsPanel: (domEl) ->
       refreshBtn.click() if refreshBtn
       return
     return
-  addRow('Recency window', recencySelect)
+  addRow('Recency window', self.selectInput(recencyOptions, recencyCurrent, recencyChange))
 
   paneToggle = document.createElement('div')
   paneToggle.className = 'pane-segmented'
