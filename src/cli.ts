@@ -10,6 +10,7 @@ import {
   installSessionStartHookAt,
   uninstallSessionStartHookAt,
 } from './settings-hook.ts';
+import { atomicWrite } from './util.ts';
 
 export interface CliResult {
   output: string;
@@ -87,23 +88,37 @@ function usage(): string {
   ].join('\n');
 }
 
-async function runInstall(): Promise<CliResult> {
-  const dataDir = getDataDir();
-  const cacheDir = getCacheDir();
-  fs.mkdirSync(dataDir, { recursive: true });
-  fs.mkdirSync(cacheDir, { recursive: true });
+interface InstallTargets {
+  widgetTarget: string;
+  widgetSource: string;
+  slashCmdTarget: string;
+  slashCmdSource: string;
+  settingsPath: string;
+  cliPath: string;
+}
 
+function installTargets(): InstallTargets {
   const root = repoRoot();
-  const widgetTarget = path.join(homedir(), 'Library', 'Application Support', 'Übersicht', 'widgets', 'panes.widget');
-  const widgetSource = path.join(root, 'widget');
-  const slashCmdTarget = path.join(homedir(), '.claude', 'commands', 'panes.md');
-  const slashCmdSource = path.join(root, 'claude', 'panes.md');
+  return {
+    widgetTarget: path.join(homedir(), 'Library', 'Application Support', 'Übersicht', 'widgets', 'panes.widget'),
+    widgetSource: path.join(root, 'widget'),
+    slashCmdTarget: path.join(homedir(), '.claude', 'commands', 'panes.md'),
+    slashCmdSource: path.join(root, 'claude', 'panes.md'),
+    settingsPath: path.join(homedir(), '.claude', 'settings.json'),
+    cliPath: path.join(root, 'cli.mjs'),
+  };
+}
 
-  fs.mkdirSync(path.dirname(widgetTarget), { recursive: true });
-  fs.mkdirSync(path.dirname(slashCmdTarget), { recursive: true });
+async function runInstall(): Promise<CliResult> {
+  fs.mkdirSync(getDataDir(), { recursive: true });
+  fs.mkdirSync(getCacheDir(), { recursive: true });
+
+  const t = installTargets();
+  fs.mkdirSync(path.dirname(t.widgetTarget), { recursive: true });
+  fs.mkdirSync(path.dirname(t.slashCmdTarget), { recursive: true });
 
   const linkActions: string[] = [];
-  for (const [src, tgt] of [[widgetSource, widgetTarget], [slashCmdSource, slashCmdTarget]] as [string, string][]) {
+  for (const [src, tgt] of [[t.widgetSource, t.widgetTarget], [t.slashCmdSource, t.slashCmdTarget]] as [string, string][]) {
     const stat = fs.lstatSync(tgt, { throwIfNoEntry: false });
     if (stat) {
       if (stat.isSymbolicLink() && fs.readlinkSync(tgt) === src) {
@@ -117,9 +132,7 @@ async function runInstall(): Promise<CliResult> {
     linkActions.push(`  + ${tgt} → ${src}`);
   }
 
-  const settingsPath = path.join(homedir(), '.claude', 'settings.json');
-  const cliPath = path.join(repoRoot(), 'cli.mjs');
-  const hookResult = installSessionStartHookAt(settingsPath, cliPath);
+  const hookResult = installSessionStartHookAt(t.settingsPath, t.cliPath);
   const hookActions = [`  ${hookResult.added ? '+' : '='} ${hookResult.message}`];
 
   return {
@@ -129,11 +142,9 @@ async function runInstall(): Promise<CliResult> {
 }
 
 async function runUninstall(): Promise<CliResult> {
-  const widgetTarget = path.join(homedir(), 'Library', 'Application Support', 'Übersicht', 'widgets', 'panes.widget');
-  const slashCmdTarget = path.join(homedir(), '.claude', 'commands', 'panes.md');
-
+  const t = installTargets();
   const actions: string[] = [];
-  for (const tgt of [widgetTarget, slashCmdTarget]) {
+  for (const tgt of [t.widgetTarget, t.slashCmdTarget]) {
     const stat = fs.lstatSync(tgt, { throwIfNoEntry: false });
     if (!stat) {
       actions.push(`  - ${tgt} (not present)`);
@@ -147,9 +158,7 @@ async function runUninstall(): Promise<CliResult> {
     actions.push(`  - ${tgt}`);
   }
 
-  const settingsPath = path.join(homedir(), '.claude', 'settings.json');
-  const cliPath = path.join(repoRoot(), 'cli.mjs');
-  const hookResult = uninstallSessionStartHookAt(settingsPath, cliPath);
+  const hookResult = uninstallSessionStartHookAt(t.settingsPath, t.cliPath);
   const hookActions = [`  ${hookResult.removed ? '-' : '='} ${hookResult.message}`];
 
   return {
@@ -238,7 +247,7 @@ async function runFilter(args: string[]): Promise<CliResult> {
     return { output: `panes filter: invalid value '${arg}' (use a positive integer or 'clear')\n`, exitCode: 2 };
   }
 
-  fs.writeFileSync(filterPath, JSON.stringify({ recencyDays: days }) + '\n');
+  atomicWrite(filterPath, JSON.stringify({ recencyDays: days }) + '\n');
   return { output: `panes filter: set recencyDays=${days} at ${filterPath}\n`, exitCode: 0 };
 }
 
