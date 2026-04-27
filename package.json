@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src/ tests/",
-    "lint:fix": "eslint src/ tests/ --fix"
+    "lint:fix": "eslint src/ tests/ --fix",
+    "build:widget": "node scripts/build-widget.mjs"
   },
   "dependencies": {
     "@types/escape-html": "^1.0.4",
