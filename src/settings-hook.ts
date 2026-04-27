@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { atomicWrite } from './util.ts';
 
 export interface InstallResult {
   added: boolean;
@@ -48,9 +49,7 @@ function readSettings(settingsPath: string): ReadOk | ReadErr {
 
 function writeSettingsAtomic(settingsPath: string, settings: SettingsObject): void {
   fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-  const tmp = `${settingsPath}.tmp.${process.pid}`;
-  fs.writeFileSync(tmp, JSON.stringify(settings, null, 2) + '\n');
-  fs.renameSync(tmp, settingsPath);
+  atomicWrite(settingsPath, JSON.stringify(settings, null, 2) + '\n');
 }
 
 function isOurHookGroup(group: unknown, cliPath: string): boolean {

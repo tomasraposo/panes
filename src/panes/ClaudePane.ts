@@ -4,10 +4,10 @@ import { homedir } from 'os';
 import { spawn } from 'child_process';
 import { parseMarkdown } from '../markdown.ts';
 import { getCacheDir, getDataDir } from '../paths.ts';
+import { atomicWrite, FRESHNESS_TTL_MS, isFresh } from '../util.ts';
 import type { Pane, PaneContent, RefreshResult, WriteResult } from './Pane.ts';
 
 const FILENAME = '30-claude.md';
-const FRESHNESS_TTL_MS = 5 * 60 * 1000;
 const SLASH_COMMAND_PATH_FRAGMENT = '.claude/commands/panes.md';
 const LOG_FILENAME = 'refresh-claude.log';
 
@@ -40,12 +40,9 @@ export class ClaudePane implements Pane {
   }
 
   async writeContent(content: string): Promise<WriteResult> {
-    const dataDir = getDataDir();
-    fs.mkdirSync(dataDir, { recursive: true });
+    fs.mkdirSync(getDataDir(), { recursive: true });
     const target = this.filePath();
-    const tmp = `${target}.tmp.${process.pid}`;
-    fs.writeFileSync(tmp, content);
-    fs.renameSync(tmp, target);
+    atomicWrite(target, content);
     return {
       ok: true,
       message: `wrote ${target} (${content.length} bytes)`,
@@ -60,9 +57,9 @@ export class ClaudePane implements Pane {
     }
 
     const file = this.filePath();
-    if (!force && fs.existsSync(file)) {
-      const ageMs = Date.now() - fs.statSync(file).mtimeMs;
-      if (ageMs < FRESHNESS_TTL_MS) {
+    if (!force) {
+      const { fresh, ageMs } = isFresh(file);
+      if (fresh) {
         return {
           ok: true,
           message: `pane is fresh (${Math.round(ageMs / 1000)}s old < ${FRESHNESS_TTL_MS / 1000}s); skipping (use --force to override)`,

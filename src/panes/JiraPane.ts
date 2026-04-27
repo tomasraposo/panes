@@ -2,10 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { getDataDir } from '../paths.ts';
 import { parseMarkdown } from '../markdown.ts';
+import { atomicWrite, isFresh } from '../util.ts';
 import type { Pane, PaneContent, RefreshResult } from './Pane.ts';
 
 const FILENAME = '50-jira.md';
-const FRESHNESS_TTL_MS = 5 * 60 * 1000;
 const DEFAULT_JIRA_BASE = 'https://talkdesk.atlassian.net';
 const JQL = 'assignee = currentUser() AND statusCategory != Done ORDER BY updated DESC';
 const MAX_RESULTS = 25;
@@ -46,9 +46,9 @@ export class JiraPane implements Pane {
 
   async refresh(opts: RefreshOpts = {}): Promise<RefreshResult> {
     const file = this.filePath();
-    if (!opts.force && fs.existsSync(file)) {
-      const ageMs = Date.now() - fs.statSync(file).mtimeMs;
-      if (ageMs < FRESHNESS_TTL_MS) {
+    if (!opts.force) {
+      const { fresh, ageMs } = isFresh(file);
+      if (fresh) {
         return {
           ok: true,
           message: `pane is fresh (${Math.round(ageMs / 1000)}s); skipping (use --force)`,
@@ -64,11 +64,8 @@ export class JiraPane implements Pane {
 
     try {
       const md = await fetchAndFormat({ email, token, fetchImpl: opts.fetchImpl ?? fetch });
-      const dataDir = getDataDir();
-      fs.mkdirSync(dataDir, { recursive: true });
-      const tmp = `${file}.tmp.${process.pid}`;
-      fs.writeFileSync(tmp, md);
-      fs.renameSync(tmp, file);
+      fs.mkdirSync(getDataDir(), { recursive: true });
+      atomicWrite(file, md);
       return { ok: true, message: `wrote ${file} (${md.length} bytes)` };
     } catch (e) {
       return { ok: false, message: `Jira fetch failed: ${(e as Error).message}` };
