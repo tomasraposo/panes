@@ -22,13 +22,17 @@ DEFAULT_SETTINGS:
 
 render: (output) -> output
 
-afterRender: (domEl) ->
+setupUi: (domEl) ->
   @applySettings(domEl)
-  @applySavedPosition(domEl)
   @setupSections(domEl)
   @attachDrag(domEl)
   @attachRefresh(domEl)
   @attachSettings(domEl)
+  return
+
+afterRender: (domEl) ->
+  @applySavedPosition(domEl)
+  @setupUi(domEl)
   return
 
 update: (output, domEl) ->
@@ -40,11 +44,7 @@ update: (output, domEl) ->
     return
   @lastUpdate = now
   domEl.innerHTML = output
-  @applySettings(domEl)
-  @setupSections(domEl)
-  @attachDrag(domEl)
-  @attachRefresh(domEl)
-  @attachSettings(domEl)
+  @setupUi(domEl)
   return
 
 setupSections: (domEl) ->
@@ -140,15 +140,17 @@ setupSections: (domEl) ->
       return
   return
 
-loadSectionOrder: ->
-  raw = localStorage.getItem('panes-section-order')
-  return [] unless raw
+safeLoadJson: (key) ->
+  raw = localStorage.getItem(key)
+  return null unless raw
   try
-    parsed = JSON.parse(raw)
-    return parsed if Array.isArray(parsed)
+    return JSON.parse(raw)
   catch
-    return []
-  return []
+    return null
+
+loadSectionOrder: ->
+  parsed = @safeLoadJson('panes-section-order')
+  if Array.isArray(parsed) then parsed else []
 
 saveSectionOrderFromDom: (bodyEl) ->
   order = []
@@ -159,14 +161,9 @@ saveSectionOrderFromDom: (bodyEl) ->
   return
 
 loadSettings: ->
-  raw = localStorage.getItem('panes-settings')
-  return @cloneDefaults() unless raw
-  parsed = null
-  try
-    parsed = JSON.parse(raw)
-  catch
-    return @cloneDefaults()
-  return @mergeDefaults(parsed)
+  parsed = @safeLoadJson('panes-settings')
+  return @cloneDefaults() unless parsed
+  @mergeDefaults(parsed)
 
 saveSettings: (settings) ->
   localStorage.setItem('panes-settings', JSON.stringify(settings))
@@ -212,13 +209,7 @@ applySettings: (domEl) ->
   return
 
 applySavedPosition: (domEl) ->
-  raw = localStorage.getItem('panes-position')
-  return unless raw
-  pos = null
-  try
-    pos = JSON.parse(raw)
-  catch
-    return
+  pos = @safeLoadJson('panes-position')
   return unless pos
   if typeof pos.x == 'number'
     domEl.style.left = "#{pos.x}px"
@@ -487,11 +478,7 @@ attachRefresh: (domEl) ->
       self.run "/Users/tomasraposo/panes/cli.mjs render", (err, output) ->
         unless err
           domEl.innerHTML = output
-          self.applySettings(domEl)
-          self.setupSections(domEl)
-          self.attachDrag(domEl)
-          self.attachRefresh(domEl)
-          self.attachSettings(domEl)
+          self.setupUi(domEl)
         return
       return
 
