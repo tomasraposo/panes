@@ -155,6 +155,24 @@ parseStat: (raw) ->
   mtime: parseInt(parts[0], 10) or 0
   size: size
 
+fetchMeta: (cb) ->
+  @run "/Users/tomasraposo/panes/cli.mjs meta", (err, out) ->
+    return cb(null) if err or not out
+    try
+      cb(JSON.parse(out))
+    catch
+      cb(null)
+    return
+  return
+
+readStat: (filePath, cb) ->
+  self = @
+  cmd = "stat -f \"%m %z\" \"#{filePath}\" 2>/dev/null || echo \"0 -1\""
+  @run cmd, (err, out) ->
+    cb(self.parseStat(out))
+    return
+  return
+
 colorInput: (value, onInput) ->
   input = document.createElement('input')
   input.type = 'color'
@@ -487,24 +505,15 @@ attachRefresh: (domEl) ->
     paint()
     timerInterval = setInterval(paint, 500)
 
-    self.run "/Users/tomasraposo/panes/cli.mjs meta", (errMeta, metaOut) ->
-      meta = null
-      try
-        meta = JSON.parse(metaOut) if metaOut
-      catch
-        meta = null
-      if meta
-        displayName = meta.displayName or displayName
-        dataPath = meta.dataPath
-      return finish() unless dataPath
-
-      statCmd = "stat -f \"%m %z\" \"#{dataPath}\" 2>/dev/null || echo \"0 -1\""
+    self.fetchMeta (meta) ->
+      return finish() unless meta?.dataPath
+      displayName = meta.displayName or displayName
+      dataPath = meta.dataPath
       logCmd = "tail -n 1 \"$HOME/.panes/cache/refresh-#{meta.id}.log\" 2>/dev/null"
 
-      self.run statCmd, (err, mt) ->
-        { mtime: initialMtime, size: initialSize } = self.parseStat(mt)
-
-        self.run "/Users/tomasraposo/panes/cli.mjs refresh --force", (err2, _o) ->
+      self.readStat dataPath, (init) ->
+        { mtime: initialMtime, size: initialSize } = init
+        self.run "/Users/tomasraposo/panes/cli.mjs refresh --force", (err, _o) ->
           pollInterval = setInterval((->
             return if done
             self.run logCmd, (e1, line) ->
@@ -513,9 +522,9 @@ attachRefresh: (domEl) ->
               if trimmed.length > 0
                 lastLogLine = if trimmed.length > 80 then '…' + trimmed.slice(trimmed.length - 79) else trimmed
               return
-            self.run statCmd, (e2, m) ->
+            self.readStat dataPath, (cur) ->
               return if done
-              { mtime: newMtime, size: newSize } = self.parseStat(m)
+              { mtime: newMtime, size: newSize } = cur
               if newMtime > initialMtime or (newSize >= 0 and newSize != initialSize)
                 finish()
               return
