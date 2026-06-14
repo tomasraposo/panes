@@ -44,7 +44,11 @@ attachDrag: (domEl) ->
   return
 
 # === lifecycle.coffee ===
-command: "/Users/tomasraposo/panes/cli.mjs render 2>&1"
+# Übersicht runs commands under launchd's minimal PATH (no asdf shims), so node
+# isn't found. Prefix PATH with the brew asdf bin + shims dir; the cli.mjs shebang
+# (#!/usr/bin/env node) then resolves the .tool-versions node. Repeated on every
+# cli.mjs invocation across the widget sources for the same reason.
+command: "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs render 2>&1"
 
 refreshFrequency: 60000
 
@@ -102,7 +106,7 @@ parseStat: (raw) ->
   size: size
 
 fetchMeta: (cb) ->
-  @run "/Users/tomasraposo/panes/cli.mjs meta", (err, out) ->
+  @run "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs meta", (err, out) ->
     return cb(null) if err or not out
     try
       cb(JSON.parse(out))
@@ -164,7 +168,7 @@ attachRefresh: (domEl) ->
       btn.classList.remove('spinning')
       btn.disabled = false
       status.remove() if status?.parentNode
-      self.run "/Users/tomasraposo/panes/cli.mjs render", (err, output) ->
+      self.run "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs render", (err, output) ->
         unless err
           domEl.innerHTML = output
           self.setupUi(domEl)
@@ -182,7 +186,7 @@ attachRefresh: (domEl) ->
 
       self.readStat dataPath, (init) ->
         { mtime: initialMtime, size: initialSize } = init
-        self.run "/Users/tomasraposo/panes/cli.mjs refresh --force", (err, _o) ->
+        self.run "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs refresh --force", (err, _o) ->
           pollInterval = setInterval((->
             return if done
             self.run logCmd, (e1, line) ->
@@ -408,7 +412,7 @@ buildSettingsPanel: (domEl) ->
     s = self.mutateSetting domEl, (s) ->
       s.recencyDays = if v == 'all' then null else parseInt(v, 10)
     arg = if s.recencyDays? then String(s.recencyDays) else 'clear'
-    self.run "/Users/tomasraposo/panes/cli.mjs filter #{arg}", (err, _out) ->
+    self.run "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs filter #{arg}", (err, _out) ->
       return if err
       refreshBtn = domEl.querySelector('button.pane-refresh')
       refreshBtn.click() if refreshBtn
@@ -438,7 +442,7 @@ buildSettingsPanel: (domEl) ->
         self.mutateSetting domEl, (s) -> s.activePane = newId
         for sib in paneToggle.querySelectorAll('button')
           sib.setAttribute('aria-pressed', if sib.dataset.paneId == newId then 'true' else 'false')
-        self.run "/Users/tomasraposo/panes/cli.mjs active #{newId}", (err, _out) ->
+        self.run "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs active #{newId}", (err, _out) ->
           return if err
           refreshBtn = domEl.querySelector('button.pane-refresh')
           refreshBtn.click() if refreshBtn

@@ -6,7 +6,7 @@ parseStat: (raw) ->
   size: size
 
 fetchMeta: (cb) ->
-  @run "/Users/tomasraposo/panes/cli.mjs meta", (err, out) ->
+  @run "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs meta", (err, out) ->
     return cb(null) if err or not out
     try
       cb(JSON.parse(out))
@@ -68,7 +68,7 @@ attachRefresh: (domEl) ->
       btn.classList.remove('spinning')
       btn.disabled = false
       status.remove() if status?.parentNode
-      self.run "/Users/tomasraposo/panes/cli.mjs render", (err, output) ->
+      self.run "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs render", (err, output) ->
         unless err
           domEl.innerHTML = output
           self.setupUi(domEl)
@@ -86,7 +86,7 @@ attachRefresh: (domEl) ->
 
       self.readStat dataPath, (init) ->
         { mtime: initialMtime, size: initialSize } = init
-        self.run "/Users/tomasraposo/panes/cli.mjs refresh --force", (err, _o) ->
+        self.run "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs refresh --force", (err, _o) ->
           pollInterval = setInterval((->
             return if done
             self.run logCmd, (e1, line) ->

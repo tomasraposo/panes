@@ -104,7 +104,7 @@ buildSettingsPanel: (domEl) ->
     s = self.mutateSetting domEl, (s) ->
       s.recencyDays = if v == 'all' then null else parseInt(v, 10)
     arg = if s.recencyDays? then String(s.recencyDays) else 'clear'
-    self.run "/Users/tomasraposo/panes/cli.mjs filter #{arg}", (err, _out) ->
+    self.run "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs filter #{arg}", (err, _out) ->
       return if err
       refreshBtn = domEl.querySelector('button.pane-refresh')
       refreshBtn.click() if refreshBtn
@@ -134,7 +134,7 @@ buildSettingsPanel: (domEl) ->
         self.mutateSetting domEl, (s) -> s.activePane = newId
         for sib in paneToggle.querySelectorAll('button')
           sib.setAttribute('aria-pressed', if sib.dataset.paneId == newId then 'true' else 'false')
-        self.run "/Users/tomasraposo/panes/cli.mjs active #{newId}", (err, _out) ->
+        self.run "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs active #{newId}", (err, _out) ->
           return if err
           refreshBtn = domEl.querySelector('button.pane-refresh')
           refreshBtn.click() if refreshBtn

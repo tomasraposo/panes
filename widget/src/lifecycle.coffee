@@ -1,4 +1,8 @@
-command: "/Users/tomasraposo/panes/cli.mjs render 2>&1"
+# Übersicht runs commands under launchd's minimal PATH (no asdf shims), so node
+# isn't found. Prefix PATH with the brew asdf bin + shims dir; the cli.mjs shebang
+# (#!/usr/bin/env node) then resolves the .tool-versions node. Repeated on every
+# cli.mjs invocation across the widget sources for the same reason.
+command: "PATH=/opt/homebrew/bin:$HOME/.asdf/shims:$PATH $HOME/personal/panes/cli.mjs render 2>&1"
 
 refreshFrequency: 60000
 

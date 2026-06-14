@@ -1,13 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
+import { homedir } from 'os';
 import {
   installSessionStartHookAt,
   uninstallSessionStartHookAt,
 } from '../src/settings-hook.ts';
 import { createTmpDir, cleanupTmpDir } from './fixtures.ts';
 
-const CLI_PATH = '/Users/tomasraposo/panes/cli.mjs';
+const CLI_PATH = path.join(homedir(), 'personal', 'panes', 'cli.mjs');
 const HOOK_CMD = `${CLI_PATH} refresh`;
 
 let tmpRoot: string;
