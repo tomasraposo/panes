@@ -3,7 +3,7 @@ import path from 'path';
 import { homedir } from 'os';
 import { spawn } from 'child_process';
 import { parseMarkdown } from '../markdown.ts';
-import { getCacheDir, getDataDir } from '../paths.ts';
+import { getCacheDir, getDataDir, getMemoryDir } from '../paths.ts';
 import { atomicWrite, FRESHNESS_TTL_MS, isFresh } from '../util.ts';
 import type { Pane, PaneContent, RefreshResult, WriteResult } from './Pane.ts';
 
@@ -71,7 +71,11 @@ export class ClaudePane implements Pane {
     if (!fs.existsSync(slashCommandPath)) {
       return { ok: false, message: `slash command not found at ${slashCommandPath}` };
     }
-    const promptContent = fs.readFileSync(slashCommandPath, 'utf8');
+    // The slash-command body uses a {{MEMORY_DIR}} placeholder so it carries no hardcoded
+    // path. Resolve it here (CWD-independent) before handing the prompt to headless claude.
+    const promptContent = fs
+      .readFileSync(slashCommandPath, 'utf8')
+      .replace(/\{\{MEMORY_DIR\}\}/g, getMemoryDir());
 
     const cacheDir = getCacheDir();
     fs.mkdirSync(cacheDir, { recursive: true });

@@ -20,3 +20,16 @@ export function getActivePanePath(): string {
 export function getFilterPath(): string {
   return path.join(getPanesHome(), 'filter.json');
 }
+
+/**
+ * Directory holding the Claude Code project memory the Claude pane reads from.
+ * Claude Code stores a project's memory at ~/.claude/projects/<abs-path with '/' → '-'>/memory,
+ * so the default is derived from the workspace path — no hardcoded username.
+ * Override the whole dir with PANES_MEMORY_DIR, or just the workspace with PANES_WORKSPACE.
+ */
+export function getMemoryDir(): string {
+  if (process.env.PANES_MEMORY_DIR) return process.env.PANES_MEMORY_DIR;
+  const workspace = process.env.PANES_WORKSPACE ?? path.join(homedir(), 'Talkdesk');
+  const encoded = workspace.replace(/\//g, '-');
+  return path.join(homedir(), '.claude', 'projects', encoded, 'memory');
+}

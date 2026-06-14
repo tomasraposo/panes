@@ -26,11 +26,11 @@ Two tables, nothing else:
 
 ## What to read
 
-1. **Always read** `~/.claude/projects/-Users-tomasraposo-Talkdesk/memory/MEMORY.md` — the index. For each `project_*.md` listed under the "## Project" section, read its body briefly to extract its current state and **the latest YYYY-MM-DD date mentioned**.
+1. **Always read** `{{MEMORY_DIR}}/MEMORY.md` — the index. (`{{MEMORY_DIR}}` is your Claude Code project-memory directory, `~/.claude/projects/<workspace-path-with-slashes-as-dashes>/memory`; the `panes refresh` CLI substitutes the concrete path before invoking this prompt. If you're reading this as the interactive `/panes` command and the token is still literal, use your own project's memory directory.) For each `project_*.md` listed under the "## Project" section, read its body briefly to extract its current state and **the latest YYYY-MM-DD date mentioned**.
 2. **Read `~/.panes/filter.json`** if it exists. If it has `{"recencyDays": N}`, use it as a recency cutoff: exclude items whose latest dated mention is older than N days. If the file doesn't exist or has no `recencyDays`, include all items.
 3. **Run the `TaskList` tool**. If it returns any tasks (in_progress or pending), merge them into the appropriate section. TaskList items are treated as touched today (relative date `now`).
 
-**Do NOT** scan the codebase, run `grep`/`find` over test suites, count test matches, or read files outside `~/.claude/projects/-Users-tomasraposo-Talkdesk/memory/` and `~/.panes/`. Project memory + TaskList + filter file is the entire input.
+**Do NOT** scan the codebase, run `grep`/`find` over test suites, count test matches, or read files outside `{{MEMORY_DIR}}/` and `~/.panes/`. Project memory + TaskList + filter file is the entire input.
 
 ## Computing the `Last` column
 
